@@ -5,7 +5,7 @@ import React from 'react';
 
 export const metadata = {
   title: 'My Blog Website',
-  description: 'A simple blog built with Next.js',
+  description: 'A simple blog built with Next.js a',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
