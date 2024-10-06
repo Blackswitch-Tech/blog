@@ -1,6 +1,7 @@
 "use client";
 
-import React from 'react';
+import React from "react";
+import { FaEdit, FaTrash } from "react-icons/fa"; // Import icons
 
 const AdminPage = () => {
   const blogPosts = [
@@ -39,7 +40,10 @@ const AdminPage = () => {
       {/* Blog Posts List */}
       <div className="w-full max-w-4xl space-y-8">
         {blogPosts.map((post) => (
-          <div key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div
+            key={post.id}
+            className="bg-white rounded-lg shadow-md overflow-hidden"
+          >
             {/* Blog Post Image */}
             <img
               src={post.image}
@@ -49,11 +53,6 @@ const AdminPage = () => {
             {/* Blog Post Details */}
             <div className="p-6">
               <div className="flex items-center mb-4">
-                <img
-                  src="/images/profile-icon.jpg" // Replace with your profile image path
-                  alt="Admin Profile"
-                  className="w-10 h-10 rounded-full"
-                />
                 <div className="ml-4">
                   <h3 className="text-xl font-semibold">{post.title}</h3>
                   <p className="text-sm text-gray-500">{post.date}</p>
@@ -62,11 +61,11 @@ const AdminPage = () => {
               {/* Actions */}
               <div className="flex space-x-4 text-gray-700">
                 <button className="flex items-center space-x-1 hover:text-red-600">
-                  {/* Placeholder for Delete Icon */}
+                  <FaTrash /> {/* Delete Icon */}
                   <span>Delete</span>
                 </button>
                 <button className="flex items-center space-x-1 hover:text-blue-600">
-                  {/* Placeholder for Edit Icon */}
+                  <FaEdit /> {/* Edit Icon */}
                   <span>Edit</span>
                 </button>
               </div>
