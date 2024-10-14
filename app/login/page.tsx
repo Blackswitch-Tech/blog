@@ -1,14 +1,30 @@
 "use client";
 
 import React, { useState } from 'react';
+import { signInWithEmailAndPassword } from "firebase/auth"; // Import Firebase Auth method
+import { useRouter } from "next/navigation";
+import { auth } from "../../lib/firebase"; // Import initialized Firebase auth
 
 const LoginPage = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null); // To store error messages
+  const router = useRouter(); // For navigation
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login with", { username, password });
+    setError(null); // Clear previous errors
+
+    try {
+      // Firebase Authentication with email and password
+      await signInWithEmailAndPassword(auth, email, password);
+
+      // If login is successful, redirect to /admin
+      router.push("/admin");
+    } catch (err) {
+      // Handle login error
+      setError("Invalid email or password");
+    }
   };
 
   return (
@@ -50,15 +66,15 @@ const LoginPage = () => {
           LOGIN
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col items-center">
-          {/* Username Input Field */}
+          {/* Email Input Field */}
           <div className="mb-10 w-3/4">
             <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="Username"
+              placeholder="Email"
               className="block w-full p-2 pl-4 bg-[#D9D9D9] border-none rounded-full focus:outline-none focus:ring-blue-500"
             />
           </div>
@@ -74,6 +90,8 @@ const LoginPage = () => {
               className="block w-full p-2 pl-4 bg-[#D9D9D9] border-none rounded-full focus:outline-none focus:ring-blue-500"
             />
           </div>
+          {/* Error message */}
+          {error && <p className="text-red-600 mb-4">{error}</p>}
           {/* Remember Me Checkbox */}
           <div className="mb-10 w-3/4 flex items-center">
             <label className="inline-flex items-center">
