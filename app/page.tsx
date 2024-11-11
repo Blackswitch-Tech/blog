@@ -6,20 +6,9 @@ const UserPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Simulating blog data
-  const blogPosts = [
-    {
-      id: 1,
-      title: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-      date: "26/09/2024",
-      image: "/images/blog-image-1.jpg", // Replace with your image path
-    },
-    {
-      id: 2,
-      title: "Mindfulness: Understanding its Impact",
-      date: "26/09/2024",
-      image: "/images/blog-image-2.jpg", // Replace with your image path
-    },
-  ];
+
+    const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+
 
   // Filter blog posts based on the search term
   const filteredPosts = blogPosts.filter((post) =>
