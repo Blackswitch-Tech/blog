@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "../../lib/cropImage"; // Helper function to crop image and convert to blob
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 
 interface BlogPost {
   id: string;
@@ -95,15 +97,34 @@ const AdminPage = () => {
       alert("Please fill in all fields and upload an image.");
       return;
     }
-
+  
     try {
-      await addDoc(collection(db, "posts"), {
+      // Convert the cropped image to a Blob
+      const blob = await fetch(croppedImage).then((res) => res.blob());
+  
+      // Upload the Blob to Firebase Storage
+      const storage = getStorage(); // Initialize Firebase Storage
+      const fileName = `images/${Date.now()}-cropped-image.jpg`; // Unique file name
+      const storageRef = ref(storage, fileName); // Reference to storage location
+      await uploadBytes(storageRef, blob); // Upload the Blob to Firebase Storage
+  
+      // Get the Firebase Storage download URL
+      const imageUrl = await getDownloadURL(storageRef);
+  
+      // Save the blog post to Firestore
+      const newPost = {
         title: newTitle,
         date: new Date().toLocaleDateString(),
-        image: croppedImage, // Use cropped image as the final image
+        image: imageUrl, // Use the Firebase Storage URL here
         content: newContent,
-      });
-
+      };
+  
+      const docRef = await addDoc(collection(db, "posts"), newPost);
+  
+      // Update local state
+      setBlogPosts((prevPosts) => [...prevPosts, { id: docRef.id, ...newPost }]);
+  
+      // Reset modal and form state
       setShowModal(false);
       setNewTitle("");
       setNewImagePreview(null);
@@ -114,6 +135,7 @@ const AdminPage = () => {
       console.error("Error adding new blog post:", error);
     }
   };
+  
 
   // Open the modal for editing
   const handleEditBlogPost = (post: BlogPost) => {

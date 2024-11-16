@@ -1,14 +1,37 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import { collection, getDocs } from "firebase/firestore"; // Import Firestore functions
+import { db } from "@/lib/firebase";
+
+interface BlogPost {
+  id: string;
+  title: string;
+  date: string;
+  image: string;
+}
 
 const UserPage = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Simulating blog data
+  const [searchTerm, setSearchTerm] = useState(""); // For search functionality
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]); // State to store fetched blog posts
 
-    const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  // Fetch blog posts from Firestore on component mount
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "posts")); // Fetch data from "posts" collection
+        const postsData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as BlogPost[];
+        setBlogPosts(postsData); // Set fetched data to state
+      } catch (error) {
+        console.error("Error fetching blog posts:", error);
+      }
+    };
 
+    fetchBlogPosts();
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   // Filter blog posts based on the search term
   const filteredPosts = blogPosts.filter((post) =>
@@ -37,6 +60,10 @@ const UserPage = () => {
               src={post.image}
               alt={post.title}
               className="w-full h-48 object-cover"
+              onError={(e) => {
+                // Set a fallback image if the original image fails to load
+                e.currentTarget.src = "/images/fallback-image.jpg";
+              }}
             />
             {/* Blog Post Details */}
             <div className="p-6">
