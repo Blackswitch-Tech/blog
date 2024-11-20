@@ -6,15 +6,15 @@ import { getFirestore } from "firebase/firestore"; // For Firestore Database (if
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBdKtDmzEpNojVOFwhUlyLnzA77hnAMU7A",
-    authDomain: "blog-b2adb.firebaseapp.com",
-    projectId: "blog-b2adb",
-    storageBucket: "blog-b2adb.appspot.com",
-    messagingSenderId: "25732568102",
-    appId: "1:25732568102:web:2b4be0a3b1fe7c284382e7",
-    measurementId: "G-KNTDNVF7W8"
-  };
-  
+  apiKey: "AIzaSyBdKtDmzEpNojVOFwhUlyLnzA77hnAMU7A",
+  authDomain: "blog-b2adb.firebaseapp.com",
+  projectId: "blog-b2adb",
+  storageBucket: "blog-b2adb.firebasestorage.app",
+  messagingSenderId: "25732568102",
+  appId: "1:25732568102:web:2b4be0a3b1fe7c284382e7",
+  measurementId: "G-KNTDNVF7W8"
+};
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

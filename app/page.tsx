@@ -54,16 +54,14 @@ const UserPage = () => {
       {/* Blog Posts List */}
       <div className="w-full max-w-4xl space-y-8">
         {filteredPosts.map((post) => (
+          console.log(post),
           <div key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden">
             {/* Blog Post Image */}
             <img
               src={post.image}
               alt={post.title}
               className="w-full h-48 object-cover"
-              onError={(e) => {
-                // Set a fallback image if the original image fails to load
-                e.currentTarget.src = "/images/fallback-image.jpg";
-              }}
+              
             />
             {/* Blog Post Details */}
             <div className="p-6">
