@@ -38,6 +38,17 @@ const AdminPage = () => {
 
   const router = useRouter();
 
+    // Protect the admin route
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          // Redirect to login if user is not authenticated
+          router.push("/login");
+        }
+      });
+      return () => unsubscribe();
+    }, [router]);
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
