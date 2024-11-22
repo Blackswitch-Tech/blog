@@ -10,7 +10,8 @@ import Cropper from "react-easy-crop";
 import getCroppedImg from "../../lib/cropImage";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Link from "next/link";
-
+import DropdownMenu from "../dropdown.tsx/page";
+import { onAuthStateChanged } from "firebase/auth";
 interface BlogPost {
   id: string;
   title: string;
@@ -33,25 +34,47 @@ const AdminPage = () => {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [profilePic, setProfilePic] = useState<string | null>(null);
 
   const router = useRouter();
 
   useEffect(() => {
-    const fetchBlogPosts = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch Blog Posts
         const querySnapshot = await getDocs(collection(db, "posts"));
         const postsData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as BlogPost[];
         setBlogPosts(postsData);
+  
+        // Fetch Profile Picture
+        
+          if (userSnapshot.exists()) {
+            const userData = userSnapshot.data();
+            if (userData.profilePic) {
+              setProfilePic(userData.profilePic);
+            }
+          }
+        
       } catch (error) {
-        console.error("Error fetching blog posts:", error);
+        console.error("Error fetching data:", error);
       }
     };
-    fetchBlogPosts();
-  }, []);
+  // Listen for Authentication State Changes
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      fetchData(user.uid);
+    } else {
+      setProfilePic(null); // Clear profile picture if user is not logged in
+    }
+  });
 
+  return () => unsubscribe(); // Cleanup the listener on unmount
+}, []);
+  
+  
   const handleLogout = async () => {
     await signOut(auth);
     router.push("/login");
@@ -117,6 +140,7 @@ const AdminPage = () => {
     }
   };
 
+  
   const handleEditBlogPost = (post: BlogPost) => {
     setNewTitle(post.title);
     setNewContent(post.content);
@@ -190,14 +214,7 @@ const AdminPage = () => {
           placeholder="Search..."
           className="flex-1 p-3 border rounded-full border-gray-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
-        <div className="relative">
-          <img
-            src="/images/profile-icon.jpg"
-            alt="Admin Profile"
-            className="w-10 h-10 rounded-full cursor-pointer"
-            onClick={handleLogout}
-          />
-        </div>
+         <DropdownMenu profilePic={profilePic} setProfilePic={setProfilePic} />
       </div>
 
       <div className="w-full max-w-4xl space-y-8">
