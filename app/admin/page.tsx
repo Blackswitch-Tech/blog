@@ -56,10 +56,10 @@ const AdminPage = () => {
     return () => unsubscribe();
   }, [router]);
 
+  // Fetch blog posts
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch Blog Posts
         const querySnapshot = await getDocs(collection(db, "posts"));
         const postsData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -67,7 +67,7 @@ const AdminPage = () => {
         })) as BlogPost[];
         setBlogPosts(postsData);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching blog posts:", error);
       }
     };
 
@@ -141,13 +141,62 @@ const AdminPage = () => {
       };
 
       const docRef = await addDoc(collection(db, "posts"), newPost);
-      setBlogPosts((prevPosts) => [
-        ...prevPosts,
-        { id: docRef.id, ...newPost },
-      ]);
+      setBlogPosts((prevPosts) => [...prevPosts, { id: docRef.id, ...newPost }]);
       setShowModal(false);
     } catch (error) {
       console.error("Error adding new blog post:", error);
+    }
+  };
+
+  const handleEditBlogPost = (post: BlogPost) => {
+    setNewTitle(post.title);
+    setNewContent(post.content);
+    setNewImagePreview(post.image);
+    setCroppedImage(post.image);
+    setEditPostId(post.id);
+    setIsEditing(true);
+    setShowModal(true);
+  };
+
+  const updateBlogPost = async () => {
+    if (!editPostId || !newTitle || !croppedImage || !newContent) {
+      alert("Please fill in all fields and upload an image.");
+      return;
+    }
+
+    try {
+      const postRef = doc(db, "posts", editPostId);
+      await setDoc(
+        postRef,
+        {
+          title: newTitle,
+          date: new Date().toLocaleDateString(),
+          image: croppedImage,
+          content: newContent,
+        },
+        { merge: true }
+      );
+
+      setBlogPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === editPostId
+            ? { ...post, title: newTitle, image: croppedImage, content: newContent }
+            : post
+        )
+      );
+
+      setShowModal(false);
+    } catch (error) {
+      console.error("Error updating blog post:", error);
+    }
+  };
+
+  const deleteBlogPost = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "posts", id));
+      setBlogPosts((prevPosts) => prevPosts.filter((post) => post.id !== id));
+    } catch (error) {
+      console.error("Error deleting blog post:", error);
     }
   };
 
