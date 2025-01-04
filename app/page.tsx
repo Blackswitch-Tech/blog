@@ -64,7 +64,7 @@ const UserPage = () => {
                 <div className="p-6">
                   <h3 className="text-xl font-semibold">{post.title}</h3>
                   <p className="text-sm text-gray-500">{post.date}</p>
-                  <p className="mt-2 text-gray-700">{post.content.slice(0, 100)}...</p>
+                  <p className="mt-2 text-gray-701">{post.content.slice(0, 100)}...</p>
                 </div>
               </Link>
             </div>
