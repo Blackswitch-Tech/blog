@@ -4,19 +4,32 @@ import React, { useState, useCallback, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth } from "../../lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore"; // Added getDoc to fetch the profile picture
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useRouter } from "next/navigation";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "../../lib/cropImage";
+import Image from "next/image";
 
-const DropdownMenu = ({ profilePic, setProfilePic }: { profilePic: string | null; setProfilePic: (url: string) => void }) => {
+const DropdownMenu = ({
+  profilePic,
+  setProfilePic,
+}: {
+  profilePic: string | null;
+  setProfilePic: (url: string) => void;
+}) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
 
@@ -36,7 +49,11 @@ const DropdownMenu = ({ profilePic, setProfilePic }: { profilePic: string | null
           }
         } catch (error) {
           console.error("Error fetching profile picture:", error);
+        } finally {
+          setLoading(false); // Mark loading as complete
         }
+      } else {
+        setLoading(false);
       }
     };
 
@@ -93,16 +110,26 @@ const DropdownMenu = ({ profilePic, setProfilePic }: { profilePic: string | null
 
   return (
     <div className="relative">
-      {/* Profile Picture */}
-      <img
-        src={profilePic || "/images/profile-icon.jpg"}
-        alt="Admin Profile"
-        className="w-10 h-10 rounded-full cursor-pointer"
-        onClick={() => setShowDropdown(!showDropdown)}
-      />
+      {/* Display Loading Spinner or Placeholder */}
+      {loading ? (
+        <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
+      ) : (
+        <div onClick={() => setShowDropdown(!showDropdown)} className="cursor-pointer">
+          <Image
+            src={profilePic || "/images/profile-icon.jpg"}
+            alt="Admin Profile"
+            className="rounded-full"
+            width={40}
+            height={40}
+            onError={(e) => {
+              e.currentTarget.src = "/images/profile-icon.jpg"; // Fallback to placeholder
+            }}
+          />
+        </div>
+      )}
 
       {/* Dropdown Menu */}
-      {showDropdown && (
+      {showDropdown && !loading && (
         <div className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg w-48">
           <label
             htmlFor="upload-profile-pic"
