@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "../../lib/firebase";
 import { useRouter } from "next/navigation";
-import { signOut, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "../../lib/cropImage";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -25,22 +25,20 @@ interface BlogPost {
   title: string;
   image: string;
   content: string;
-  date?: string; // Optional if not always provided
+  date?: string;
 }
 
-const AdminPage = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+const AdminPage: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editPostId, setEditPostId] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState("");
-  const [newContent, setNewContent] = useState("");
-  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [newTitle, setNewTitle] = useState<string>("");
+  const [newContent, setNewContent] = useState<string>("");
   const [newImagePreview, setNewImagePreview] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState<number>(1);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [profilePic, setProfilePic] = useState<string | null>(null);
 
@@ -74,10 +72,23 @@ const AdminPage = () => {
     fetchData();
   }, []);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/login");
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const imageUrl = URL.createObjectURL(file);
+      setNewImagePreview(imageUrl);
+    }
   };
+
+  const onCropComplete = useCallback(
+    async (_, croppedAreaPixels: any) => {
+      if (newImagePreview && croppedAreaPixels) {
+        const croppedImg = await getCroppedImg(newImagePreview, croppedAreaPixels);
+        setCroppedImage(croppedImg);
+      }
+    },
+    [newImagePreview]
+  );
 
   const handleCreateNewBlog = () => {
     setNewTitle("");
@@ -88,32 +99,11 @@ const AdminPage = () => {
     setIsEditing(false);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setNewImageFile(file);
-      const imageUrl = URL.createObjectURL(file);
-      setNewImagePreview(imageUrl);
-    }
-  };
-
-  const onCropComplete = useCallback(
-    async (_, croppedAreaPixels) => {
-      setCroppedAreaPixels(croppedAreaPixels);
-      if (newImagePreview && croppedAreaPixels) {
-        const croppedImg = await getCroppedImg(newImagePreview, croppedAreaPixels);
-        setCroppedImage(croppedImg);
-      }
-    },
-    [newImagePreview]
-  );
-
   const addBlogPost = async () => {
     if (!newTitle || !croppedImage || !newContent) {
       alert("Please fill in all fields and upload an image.");
       return;
     }
-
     try {
       const blob = await fetch(croppedImage).then((res) => res.blob());
       const storage = getStorage();
@@ -152,19 +142,21 @@ const AdminPage = () => {
       alert("Please fill in all fields.");
       return;
     }
-
+  
     try {
       let updatedImageUrl = croppedImage;
-
-      if (newImageFile && croppedImage) {
-        const blob = await fetch(croppedImage).then((res) => res.blob());
+  
+      // If a new image was cropped, upload it and get the URL
+      if (croppedImage !== newImagePreview) {
+        const blob = await fetch(croppedImage!).then((res) => res.blob());
         const storage = getStorage();
         const fileName = `images/${Date.now()}-updated-image.jpg`;
         const storageRef = ref(storage, fileName);
         await uploadBytes(storageRef, blob);
         updatedImageUrl = await getDownloadURL(storageRef);
       }
-
+  
+      // Update the Firestore document
       const postRef = doc(db, "posts", editPostId);
       await setDoc(
         postRef,
@@ -176,7 +168,8 @@ const AdminPage = () => {
         },
         { merge: true }
       );
-
+  
+      // Update the local state with the updated post
       setBlogPosts((prevPosts) =>
         prevPosts.map((post) =>
           post.id === editPostId
@@ -184,7 +177,7 @@ const AdminPage = () => {
             : post
         )
       );
-
+  
       setShowModal(false);
       alert("Blog post updated successfully!");
     } catch (error) {
@@ -192,11 +185,12 @@ const AdminPage = () => {
       alert("Failed to update the blog post.");
     }
   };
+  
 
   const deleteBlogPost = async (id: string) => {
     try {
       await deleteDoc(doc(db, "posts", id));
-      setBlogPosts((prevPosts) => prevPosts.filter((post) => post.id !== id));
+      setBlogPosts(blogPosts.filter((post) => post.id !== id));
     } catch (error) {
       console.error("Error deleting blog post:", error);
     }
@@ -221,10 +215,7 @@ const AdminPage = () => {
 
       <div className="w-full max-w-4xl space-y-8">
         {filteredPosts.map((post) => (
-          <div
-            key={post.id}
-            className="bg-white rounded-lg shadow-md overflow-hidden"
-          >
+          <div key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden">
             <Link href={`/blog/${post.id}`}>
               <Image
                 src={post.image}
@@ -236,16 +227,7 @@ const AdminPage = () => {
               <div className="p-6">
                 <h3 className="text-xl font-semibold">{post.title}</h3>
                 <p className="text-sm text-gray-500">{post.date}</p>
-                <p
-                  className="mt-2 text-gray-700 overflow-hidden text-ellipsis line-clamp-3"
-                  style={{
-                    display: "-webkit-box",
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: "vertical",
-                  }}
-                >
-                  {post.content}
-                </p>
+                <p className="mt-2 text-gray-700 line-clamp-3">{post.content}</p>
               </div>
             </Link>
             <div className="flex justify-start gap-4 mt-4 p-4">
@@ -268,88 +250,88 @@ const AdminPage = () => {
 
       <button
         onClick={handleCreateNewBlog}
-        className="fixed bottom-6 right-6 md:bottom-8 md:right-8 w-12 h-12 md:w-16
-        md:h-16 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition duration-300"
+        className="fixed bottom-6 right-6 md:bottom-8 md:right-8 w-12 h-12 md:w-16 md:h-16 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition duration-300"
       >
         <FaPlus size={20} />
-      </button>
+      </
+      button>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white w-[90%] sm:w-[70%] md:w-[50%] rounded-lg p-6 shadow-lg max-h-[90vh] overflow-auto">
-            <h2 className="text-2xl font-bold mb-4 text-center">
-              {isEditing ? "Edit Blog Post" : "Create New Blog Post"}
-            </h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="Blog Title"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <textarea
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                placeholder="Blog Content"
-                rows={5}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              ></textarea>
-              <input
-                type="file"
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
-              />
-              {newImagePreview && (
-                <div className="relative w-full h-64 bg-gray-200 rounded-lg overflow-hidden">
-                  <Cropper
-                    image={newImagePreview}
-                    crop={crop}
-                    zoom={zoom}
-                    aspect={4 / 3}
-                    onCropChange={setCrop}
-                    onZoomChange={setZoom}
-                    onCropComplete={onCropComplete}
-                  />
-                </div>
-              )}
-              {croppedImage && (
-                <img
-                  src={croppedImage}
-                  alt="Cropped Preview"
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-              )}
-            </div>
-            <div className="flex justify-end mt-6 space-x-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg"
-              >
-                Cancel
-              </button>
-              {isEditing ? (
-                <button
-                  onClick={updateBlogPost}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Update
-                </button>
-              ) : (
-                <button
-                  onClick={addBlogPost}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Create
-                </button>
-              )}
-            </div>
+{showModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white w-[90%] sm:w-[70%] md:w-[50%] rounded-lg p-6 shadow-lg max-h-[90vh] overflow-auto">
+      <h2 className="text-2xl font-bold mb-4 text-center">
+        {isEditing ? "Edit Blog Post" : "Create New Blog Post"}
+      </h2>
+      <div className="space-y-4">
+        <input
+          type="text"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          placeholder="Blog Title"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <textarea
+          value={newContent}
+          onChange={(e) => setNewContent(e.target.value)}
+          placeholder="Blog Content"
+          rows={5}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        ></textarea>
+        <input
+          type="file"
+          onChange={handleImageUpload}
+          accept="image/*"
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
+        />
+        {newImagePreview && (
+          <div className="relative w-full h-64 bg-gray-200 rounded-lg overflow-hidden">
+            <Cropper
+              image={newImagePreview}
+              crop={crop}
+              zoom={zoom}
+              aspect={4 / 3}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+            />
           </div>
-        </div>
-      )}
+        )}
+        {croppedImage && (
+          <img
+            src={croppedImage}
+            alt="Cropped Preview"
+            className="w-full h-48 object-cover rounded-lg"
+          />
+        )}
+      </div>
+      <div className="flex justify-end mt-6 space-x-4">
+        <button
+          onClick={() => setShowModal(false)}
+          className="bg-gray-500 text-white px-4 py-2 rounded-lg"
+        >
+          Cancel
+        </button>
+        {isEditing ? (
+          <button
+            onClick={updateBlogPost}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Update
+          </button>
+        ) : (
+          <button
+            onClick={addBlogPost}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Create
+          </button>
+        )}
+      </div>
     </div>
-  );
+  </div>
+)}
+</div>
+);
 };
 
 export default AdminPage;
