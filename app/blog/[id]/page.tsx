@@ -3,10 +3,18 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { useEffect, useState } from "react";
+import Image from "next/image";
+
+interface BlogPostData {
+  title: string;
+  date: string;
+  image?: string;
+  content: string;
+}
 
 const BlogPost = ({ params }: { params: { id: string } }) => {
   const { id } = params; // Extract the dynamic ID from the URL
-  const [post, setPost] = useState<any>(null);
+  const [post, setPost] = useState<BlogPostData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch the blog post details
@@ -17,7 +25,7 @@ const BlogPost = ({ params }: { params: { id: string } }) => {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setPost(docSnap.data());
+          setPost(docSnap.data() as BlogPostData);
         } else {
           console.error("No such document!");
         }
@@ -45,10 +53,12 @@ const BlogPost = ({ params }: { params: { id: string } }) => {
         <h1 className="text-2xl font-bold">{post.title}</h1>
         <p className="text-gray-500">{post.date}</p>
         {post.image && (
-          <img
+          <Image
             src={post.image}
             alt={post.title}
             className="w-full h-64 object-cover my-4 rounded"
+            width={800}
+            height={400}
           />
         )}
         <p className="text-gray-700">{post.content}</p>
